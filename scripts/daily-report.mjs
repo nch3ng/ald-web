@@ -51,6 +51,28 @@ function daysSince(iso) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
 }
 
+/**
+ * Expand each org in `orgs` to its non-archived repos (full `owner/name`).
+ * Lets the config say "monitor everything in this org" instead of hand-listing
+ * repos — which is how the apps are actually organised. Returns {repos, notes}.
+ */
+async function expandOrgs(orgs) {
+  const repos = [];
+  const notes = [];
+  for (const org of orgs) {
+    const res = await gh([
+      "repo", "list", org, "--no-archived", "--limit", "200",
+      "--json", "nameWithOwner",
+    ]);
+    if (res.ok && Array.isArray(res.data)) {
+      repos.push(...res.data.map((r) => r.nameWithOwner));
+    } else {
+      notes.push(`org "${org}": could not list repos (${res.error || "unknown error"})`);
+    }
+  }
+  return { repos, notes };
+}
+
 const FAIL_STATES = new Set(["FAILURE", "ERROR", "TIMED_OUT", "CANCELLED", "STARTUP_FAILURE"]);
 function prChecksFailing(rollup) {
   if (!Array.isArray(rollup)) return false;
@@ -195,11 +217,6 @@ async function main() {
     console.error(`Cannot read config at ${configPath}: ${err.message}`);
     process.exit(2);
   }
-  const repos = config.repos || [];
-  if (!repos.length) {
-    console.error("No repos configured in daily-report.config.json (`repos` is empty).");
-    process.exit(2);
-  }
   const thresholds = { stalePrDays: 5, staleIssueDays: 30, ...(config.thresholds || {}) };
   const attentionLabels = config.attentionIssueLabels || ["bug", "urgent", "critical"];
 
@@ -209,6 +226,20 @@ async function main() {
     console.error(`gh is not authenticated (${auth.error}). Run \`gh auth login\`.`);
     process.exit(2);
   }
+
+  // Monitored set = explicitly listed `repos` + every non-archived repo in each
+  // configured `orgs` entry. Orgs are the primary knob — the apps live in GitHub
+  // orgs, so "add an org" beats hand-listing each repo.
+  const orgExpansion = await expandOrgs(config.orgs || []);
+  const repos = [...new Set([...(config.repos || []), ...orgExpansion.repos])];
+  if (!repos.length) {
+    console.error(
+      "Nothing to monitor: set `orgs` (e.g. [\"aldero-io\"]) and/or `repos` in daily-report.config.json." +
+        (orgExpansion.notes.length ? `\n${orgExpansion.notes.join("\n")}` : ""),
+    );
+    process.exit(2);
+  }
+  if (orgExpansion.notes.length) for (const n of orgExpansion.notes) console.error(`note: ${n}`);
 
   const results = await Promise.all(repos.map((r) => inspectRepo(r, thresholds, attentionLabels)));
   const dateStr = new Date().toISOString().slice(0, 10);

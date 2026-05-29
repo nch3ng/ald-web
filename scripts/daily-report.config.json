@@ -1,11 +1,9 @@
 {
-  "$comment": "Repos to monitor in the daily report. Edit `repos` to add/remove projects. `gh` must be authenticated with access to each repo (private repos need the `repo` scope). Thresholds tune what counts as an action item.",
-  "repos": [
-    "nch3ng/ald-web",
-    "nch3ng/stock-auto-trading",
-    "nch3ng/goqnap",
-    "nch3ng/nate-portfolio"
+  "$comment": "What the daily report monitors. `orgs` auto-expands to every non-archived repo in each GitHub org (the main knob — the apps live in orgs). `repos` adds individual repos on top. `gh` must be authenticated with access to each (private repos need `repo` scope; org listing needs `read:org`; Dependabot alerts need `security_events`). Thresholds tune what counts as an action item.",
+  "orgs": [
+    "aldero-io"
   ],
+  "repos": [],
   "thresholds": {
     "stalePrDays": 5,
     "staleIssueDays": 30
