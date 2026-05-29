@@ -8,6 +8,10 @@ name: Daily Report
 # secret (a PAT with `repo` + `security_events` scope so it can read the
 # private repos and Dependabot alerts being monitored). Enabling the schedule
 # is an explicit opt-in — see README "Daily report".
+#
+# Delivery: the report always lands in the run's job summary + an artifact. If
+# the MAIL_* secrets are set (see README) it is ALSO emailed — that step is
+# skipped automatically when they are absent, so email is purely opt-in.
 on:
   workflow_dispatch:
   # schedule:
@@ -37,6 +41,11 @@ jobs:
         if: always()
         run: cat reports/daily-report-*.md >> "$GITHUB_STEP_SUMMARY" || true
 
+      # Stable filename for the email step (the script writes a dated name).
+      - name: Normalize report path
+        if: always()
+        run: cp reports/daily-report-*.md reports/daily-report.md 2>/dev/null || true
+
       - name: Upload report artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -44,3 +53,33 @@ jobs:
           name: daily-report
           path: reports/*.md
           if-no-files-found: ignore
+
+      # Optional email delivery. Runs only when MAIL_PASSWORD is configured
+      # (a Gmail App Password works well). Set MAIL_USERNAME (sender Gmail) and
+      # MAIL_TO (recipient; defaults to the sender) too. See README "Daily report".
+      # (`secrets` can't be used in a step `if:`, so a check step gates it.)
+      - name: Check email config
+        id: mailcfg
+        if: always()
+        env:
+          PW: ${{ secrets.MAIL_PASSWORD }}
+        run: |
+          if [ -n "$PW" ]; then echo "enabled=true" >> "$GITHUB_OUTPUT";
+          else echo "enabled=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Email the report
+        if: ${{ always() && steps.mailcfg.outputs.enabled == 'true' }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Daily Report — ${{ github.repository }} — ${{ github.run_started_at }}"
+          to: ${{ secrets.MAIL_TO || secrets.MAIL_USERNAME }}
+          from: Daily Report <${{ secrets.MAIL_USERNAME }}>
+          # Markdown report rendered to HTML; the raw .md is also attached.
+          html_body: file://reports/daily-report.md
+          convert_markdown: true
+          attachments: reports/daily-report.md

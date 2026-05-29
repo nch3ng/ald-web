@@ -148,8 +148,18 @@ make report          # → prints the report and writes reports/daily-report-YYY
 - **Scheduling:** [`.github/workflows/daily-report.yml`](.github/workflows/daily-report.yml)
   runs it. It is **manual (`Run workflow`) by default**. To make it a true daily report,
   uncomment the `schedule:` block in that file **and** add a `MONITOR_TOKEN` repo secret
-  (a PAT with `repo` + `security_events` scope). The report appears in the run's job
-  summary and as a downloadable artifact.
+  (a PAT with `repo` + `read:org` + `security_events` scope so it can read the private
+  org repos and their alerts).
+- **Delivery:** every run publishes the report to the **Actions run summary** and a
+  downloadable **artifact** (zero setup). To **also email it**, add three repo secrets
+  and the workflow emails it automatically (the step self-skips when they're absent):
+  - `MAIL_USERNAME` — sender Gmail address
+  - `MAIL_PASSWORD` — a Gmail [App Password](https://myaccount.google.com/apppasswords)
+    (requires 2-Step Verification; not your normal password)
+  - `MAIL_TO` — recipient (optional; defaults to `MAIL_USERNAME`)
+
+  Set all four secrets in **Settings → Secrets and variables → Actions**. With a different
+  mail provider, change `server_address`/`server_port` in the workflow.
 
 ## Notes for contributors (agents & humans)
 
