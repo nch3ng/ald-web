@@ -63,7 +63,8 @@ app/
   api/health/route.ts      Health/liveness endpoint
   api/health/route.test.ts Test for the health endpoint
 docs/adr/                  Architecture Decision Records ("why" notes)
-.github/workflows/ci.yml   CI pipeline (lint + typecheck + test + build)
+.github/workflows/ci.yml          CI pipeline (lint + typecheck + test + build)
+.github/workflows/deploy-pages.yml Deploy: static export → GitHub Pages
 vitest.config.mts          Test runner config
 Makefile                   One-command dev + common tasks
 .nvmrc                     Pinned Node version
@@ -81,6 +82,47 @@ npm run test:watch # watch mode while developing
 Test files live next to the code they cover, named `*.test.ts(x)`. Add a test
 whenever you add a route or component so CI stays meaningful.
 
+## Deploy
+
+The hello-world slice deploys to **GitHub Pages** (static export) via GitHub Actions —
+zero spend, no extra accounts, instant rollback. Full rationale and the production
+recommendation (Vercel / Node) live in
+[`docs/adr/0002-deploy-target.md`](docs/adr/0002-deploy-target.md).
+
+**Live URL:** `https://<owner>.github.io/ald-web/` (filled in once first deploy lands).
+
+### How it deploys
+
+- **Automatically** on every push to `main`.
+- **On demand** from the GitHub UI: Actions → "Deploy to GitHub Pages" → *Run workflow*.
+
+The workflow ([`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml))
+builds a static export and publishes it:
+
+```bash
+# What CI runs — reproduce a deploy build locally:
+STATIC_EXPORT=true PAGES_BASE_PATH=/ald-web npm run build   # → ./out
+npx serve out   # spot-check (note: app is served under the /ald-web base path)
+```
+
+> Static export is **opt-in** via `STATIC_EXPORT=true`. Without it, `make dev` /
+> `make build` run the normal full Next.js Node app unchanged.
+
+### One-time setup (per repo)
+
+In GitHub: **Settings → Pages → Build and deployment → Source = "GitHub Actions"**.
+After that, deploys are fully automated.
+
+### Rollback
+
+- **Fast path:** Actions tab → "Deploy to GitHub Pages" → open a previous successful
+  run → **Re-run jobs**. This redeploys that exact earlier build.
+- **Source path:** `git revert <bad-commit> && git push` — the workflow rebuilds and
+  redeploys `main`.
+
+Each deploy is a discrete, restorable artifact. For the future production host
+(Vercel/Node), rollback is documented in the ADR when that host is provisioned.
+
 ## Notes for contributors (agents & humans)
 
 - This uses **Next.js 16**, which has breaking changes vs. older versions. See
@@ -90,4 +132,5 @@ whenever you add a route or component so CI stays meaningful.
   GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
   Reproduce it locally with `make check` (or its alias `make ci`) before pushing.
   (The workflow activates once the repo is pushed to a GitHub remote.)
-- **Deployment** is a separate child task that builds on this foundation.
+- **Deployment**: see the [Deploy](#deploy) section above and
+  [`docs/adr/0002-deploy-target.md`](docs/adr/0002-deploy-target.md).
