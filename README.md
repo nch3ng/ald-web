@@ -145,11 +145,15 @@ make report          # → prints the report and writes reports/daily-report-YYY
   with access to each repo. Private repos need the `repo` scope, org listing needs
   `read:org`, and Dependabot alerts need `security_events`. The script is zero-dependency
   Node (no build step).
-- **Scheduling:** [`.github/workflows/daily-report.yml`](.github/workflows/daily-report.yml)
-  runs it. It is **manual (`Run workflow`) by default**. To make it a true daily report,
-  uncomment the `schedule:` block in that file **and** add a `MONITOR_TOKEN` repo secret
-  (a PAT with `repo` + `read:org` + `security_events` scope so it can read the private
-  org repos and their alerts).
+- **Scheduling:** there are two ways to run it daily.
+  - **Local (recommended, no cloud secrets):** a scheduler on a machine that's already
+    `gh`-authenticated runs `node scripts/daily-report.mjs` on a cron and delivers the
+    output. This needs no token copied anywhere. (In the Paperclip deployment this is a
+    daily routine that posts the report into the issue tracker.)
+  - **GitHub Actions (cloud):** [`.github/workflows/daily-report.yml`](.github/workflows/daily-report.yml)
+    is **manual (`Run workflow`) by default**. To make it run daily in the cloud, uncomment
+    the `schedule:` block **and** add a `MONITOR_TOKEN` repo secret (a PAT with `repo` +
+    `read:org` + `security_events` so it can read the private org repos and their alerts).
 - **Delivery:** every run publishes the report to the **Actions run summary** and a
   downloadable **artifact** (zero setup). To **also email it**, add three repo secrets
   and the workflow emails it automatically (the step self-skips when they're absent):
