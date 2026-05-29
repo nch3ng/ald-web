@@ -1,0 +1,14 @@
+{
+  "$comment": "Repos to monitor in the daily report. Edit `repos` to add/remove projects. `gh` must be authenticated with access to each repo (private repos need the `repo` scope). Thresholds tune what counts as an action item.",
+  "repos": [
+    "nch3ng/ald-web",
+    "nch3ng/stock-auto-trading",
+    "nch3ng/goqnap",
+    "nch3ng/nate-portfolio"
+  ],
+  "thresholds": {
+    "stalePrDays": 5,
+    "staleIssueDays": 30
+  },
+  "attentionIssueLabels": ["bug", "urgent", "critical", "security", "p0", "p1"]
+}

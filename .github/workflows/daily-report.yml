@@ -1,0 +1,46 @@
+name: Daily Report
+
+# Cross-repo daily report (ALD-8): runs scripts/daily-report.mjs against the
+# repos in scripts/daily-report.config.json and surfaces "things to address".
+#
+# Trigger is manual (workflow_dispatch) by default. To turn it into a true
+# daily report, uncomment the `schedule` block below AND add a MONITOR_TOKEN
+# secret (a PAT with `repo` + `security_events` scope so it can read the
+# private repos and Dependabot alerts being monitored). Enabling the schedule
+# is an explicit opt-in — see README "Daily report".
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "0 13 * * *" # 13:00 UTC daily
+
+jobs:
+  report:
+    name: Generate daily report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Generate report
+        env:
+          # Falls back to the run's GITHUB_TOKEN (this repo only) if MONITOR_TOKEN
+          # is not set, so the workflow still runs — it just sees fewer repos.
+          GH_TOKEN: ${{ secrets.MONITOR_TOKEN || secrets.GITHUB_TOKEN }}
+        run: node scripts/daily-report.mjs --out
+
+      - name: Publish to job summary
+        if: always()
+        run: cat reports/daily-report-*.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-report
+          path: reports/*.md
+          if-no-files-found: ignore

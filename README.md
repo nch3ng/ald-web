@@ -63,8 +63,11 @@ app/
   api/health/route.ts      Health/liveness endpoint
   api/health/route.test.ts Test for the health endpoint
 docs/adr/                  Architecture Decision Records ("why" notes)
+scripts/daily-report.mjs          Daily cross-repo report generator (ALD-8)
+scripts/daily-report.config.json  Which repos to monitor + thresholds
 .github/workflows/ci.yml          CI pipeline (lint + typecheck + test + build)
 .github/workflows/deploy-pages.yml Deploy: static export → GitHub Pages
+.github/workflows/daily-report.yml Daily report (manual; schedule opt-in)
 vitest.config.mts          Test runner config
 Makefile                   One-command dev + common tasks
 .nvmrc                     Pinned Node version
@@ -122,6 +125,29 @@ After that, deploys are fully automated.
 
 Each deploy is a discrete, restorable artifact. For the future production host
 (Vercel/Node), rollback is documented in the ADR when that host is provisioned.
+
+## Daily report (all apps)
+
+A daily cross-repo digest of **the things to address today** — red CI on the default
+branch, PRs failing checks or stuck awaiting review, attention-labelled issues, and open
+Dependabot alerts — across every repo we monitor. Rationale:
+[`docs/adr/0003-daily-report.md`](docs/adr/0003-daily-report.md).
+
+```bash
+make report          # → prints the report and writes reports/daily-report-YYYY-MM-DD.md
+```
+
+- **What's monitored:** edit the `repos` list (and thresholds) in
+  [`scripts/daily-report.config.json`](scripts/daily-report.config.json). That's the only
+  step to add or remove a project.
+- **Requirements:** the [`gh`](https://cli.github.com) CLI authenticated (`gh auth login`)
+  with access to each repo. Private repos need the `repo` scope; Dependabot alerts need
+  `security_events`. The script is zero-dependency Node (no build step).
+- **Scheduling:** [`.github/workflows/daily-report.yml`](.github/workflows/daily-report.yml)
+  runs it. It is **manual (`Run workflow`) by default**. To make it a true daily report,
+  uncomment the `schedule:` block in that file **and** add a `MONITOR_TOKEN` repo secret
+  (a PAT with `repo` + `security_events` scope). The report appears in the run's job
+  summary and as a downloadable artifact.
 
 ## Notes for contributors (agents & humans)
 
