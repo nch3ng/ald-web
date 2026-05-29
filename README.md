@@ -89,7 +89,7 @@ zero spend, no extra accounts, instant rollback. Full rationale and the producti
 recommendation (Vercel / Node) live in
 [`docs/adr/0002-deploy-target.md`](docs/adr/0002-deploy-target.md).
 
-**Live URL:** `https://<owner>.github.io/ald-web/` (filled in once first deploy lands).
+**Live URL:** https://nch3ng.github.io/ald-web/ (health: https://nch3ng.github.io/ald-web/api/health)
 
 ### How it deploys
 
