@@ -2,7 +2,7 @@
 # `make dev` is the one-command path from a fresh clone to a running app:
 # it installs dependencies if needed, then starts the dev server.
 
-.PHONY: dev setup build start lint typecheck check clean
+.PHONY: dev setup build start lint typecheck test ci check clean
 
 # One command from clone to running app on http://localhost:3000
 dev: node_modules
@@ -28,8 +28,17 @@ lint: node_modules ## Lint
 typecheck: node_modules ## TypeScript type check
 	npm run typecheck
 
-# Full local verification — mirrors what CI will run (ALD child task).
-check: lint typecheck build ## Lint + typecheck + build
+test: node_modules ## Run the test suite once
+	npm test
+
+# Full local verification: lint + typecheck + test + build. This is the exact
+# set of steps the GitHub Actions CI pipeline runs (.github/workflows/ci.yml),
+# so a green `make check` locally means a green CI run.
+check: lint typecheck test build ## Lint + typecheck + test + build (mirrors CI)
+
+# Alias so `make ci` reproduces the CI pipeline locally. Delegates to `check`
+# so the two can never drift apart.
+ci: check ## Alias for `make check` — reproduce the CI pipeline locally
 
 clean: ## Remove build output and dependencies
 	rm -rf .next node_modules

@@ -46,7 +46,9 @@ curl -s http://localhost:3000/api/health
 | `make start`     | Run the production build (run `make build` first) |
 | `make lint`      | ESLint                                            |
 | `make typecheck` | TypeScript type check (`tsc --noEmit`)            |
-| `make check`     | lint + typecheck + build (what CI will run)       |
+| `make test`      | Run the test suite once (Vitest)                  |
+| `make check`     | lint + typecheck + test + build (mirrors CI)      |
+| `make ci`        | Alias for `make check` — reproduce CI locally     |
 | `make clean`     | Remove `.next/` and `node_modules/`               |
 
 Every `make` target has an `npm run` equivalent (see `package.json`).
@@ -55,18 +57,37 @@ Every `make` target has an `npm run` equivalent (see `package.json`).
 
 ```
 app/
-  layout.tsx          Root layout + metadata
-  page.tsx            Hello-world home page
-  api/health/route.ts Health/liveness endpoint
-docs/adr/             Architecture Decision Records ("why" notes)
-Makefile              One-command dev + common tasks
-.nvmrc                Pinned Node version
+  layout.tsx               Root layout + metadata
+  page.tsx                 Hello-world home page
+  page.test.tsx            Render smoke test for the home page
+  api/health/route.ts      Health/liveness endpoint
+  api/health/route.test.ts Test for the health endpoint
+docs/adr/                  Architecture Decision Records ("why" notes)
+.github/workflows/ci.yml   CI pipeline (lint + typecheck + test + build)
+vitest.config.mts          Test runner config
+Makefile                   One-command dev + common tasks
+.nvmrc                     Pinned Node version
 ```
+
+## Testing
+
+Tests run on [Vitest](https://vitest.dev) + React Testing Library.
+
+```bash
+make test          # run once (CI mode)
+npm run test:watch # watch mode while developing
+```
+
+Test files live next to the code they cover, named `*.test.ts(x)`. Add a test
+whenever you add a route or component so CI stays meaningful.
 
 ## Notes for contributors (agents & humans)
 
 - This uses **Next.js 16**, which has breaking changes vs. older versions. See
   [`AGENTS.md`](AGENTS.md) — read the version's own docs under
   `node_modules/next/dist/docs/` before making framework changes.
-- CI (lint/typecheck/tests) and deployment are **separate child tasks** that build on
-  this foundation. `make check` is the local stand-in for CI today.
+- **CI** runs lint + typecheck + test + build on every push and pull request via
+  GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+  Reproduce it locally with `make check` (or its alias `make ci`) before pushing.
+  (The workflow activates once the repo is pushed to a GitHub remote.)
+- **Deployment** is a separate child task that builds on this foundation.
