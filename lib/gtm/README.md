@@ -14,6 +14,7 @@ satisfies.
 | `seo.ts`         | `buildMetadata()` + JSON-LD builders (Organization/WebSite/App).    |
 | `JsonLd.tsx`     | Renders a JSON-LD node as a `<script type="application/ld+json">`.  |
 | `analytics.ts`   | The shared event model + typed `track()` (GA4 sink, no-op if unset).|
+| `attribution.ts` | Captures + persists UTM attribution; auto-merged into every event.  |
 | `analytics-loader.tsx` | Loads gtag.js + fires `page_view`; renders nothing if unconfigured. |
 | `index.ts`       | Barrel — `import { ... } from "@/lib/gtm"`.                          |
 
@@ -79,6 +80,17 @@ satisfies.
 
    `track()` is fully typed — a wrong event name or missing required param is a
    compile error.
+
+## UTM attribution (channel measurement)
+
+`attribution.ts` makes signups attributable to the campaign that drove the visit.
+On load, `<Analytics/>` parses `utm_*` params from the landing URL and persists
+them (first-touch, per `sessionStorage` visit). `dispatch()` then merges that
+attribution into **every** event — so a `signup` fired pages later still carries
+`source`, `medium`, `campaign`, and `content`. No per-call-site work; explicit
+`track()` params win on key collision. See
+[`docs/youtube-funnel.md`](../../docs/youtube-funnel.md) for the end-to-end flow
+and the GA4 go-live follow-ups.
 
 ## Configuring analytics
 

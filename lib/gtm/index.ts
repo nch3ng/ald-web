@@ -23,3 +23,11 @@ export {
   type GtmEventMap,
 } from "./analytics";
 export { Analytics } from "./analytics-loader";
+export {
+  captureAttribution,
+  getAttribution,
+  parseUtmParams,
+  clearAttribution,
+  ATTRIBUTION_STORAGE_KEY,
+  type Attribution,
+} from "./attribution";

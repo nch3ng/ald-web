@@ -14,7 +14,15 @@
  * Sink: Google Analytics 4 via gtag.js when NEXT_PUBLIC_GA_MEASUREMENT_ID is
  * set; otherwise `track()` is a no-op (and logs in dev). Swapping in a
  * different sink means changing only `dispatch()` below.
+ *
+ * Attribution: every event is automatically enriched with the visit's UTM
+ * attribution (source/medium/campaign/content) captured by `attribution.ts`, so
+ * signups land in GA already attributed to the channel and creative that drove
+ * them — e.g. `source=youtube`, `campaign=<video-slug>`. Explicit params passed
+ * to `track()` win over attribution on key collision.
  */
+
+import { captureAttribution, type Attribution } from "./attribution";
 
 export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -45,15 +53,20 @@ const isDev = process.env.NODE_ENV !== "production";
  * it no-ops off the browser or when analytics isn't configured.
  */
 function dispatch(name: GtmEventName, params: Record<string, unknown>): void {
+  // Merge the visit's UTM attribution under the explicit params (explicit wins).
+  // captureAttribution() is idempotent first-touch and no-ops off the browser.
+  const attribution: Attribution = isBrowser ? captureAttribution() : {};
+  const enriched = { ...attribution, ...params };
+
   if (isDev && isBrowser) {
     // Observability in dev without a GA id — confirm events fire and carry the
-    // right params before they ever reach production.
-    console.debug(`[gtm] ${name}`, params);
+    // right params (including attribution) before they ever reach production.
+    console.debug(`[gtm] ${name}`, enriched);
   }
   if (!isBrowser || !GA_MEASUREMENT_ID || typeof window.gtag !== "function") {
     return;
   }
-  window.gtag("event", name, params);
+  window.gtag("event", name, enriched);
 }
 
 /**
