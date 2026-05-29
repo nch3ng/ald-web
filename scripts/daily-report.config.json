@@ -1,9 +1,12 @@
 {
-  "$comment": "What the daily report monitors. `orgs` auto-expands to every non-archived repo in each GitHub org (the main knob — the apps live in orgs). `repos` adds individual repos on top. `gh` must be authenticated with access to each (private repos need `repo` scope; org listing needs `read:org`; Dependabot alerts need `security_events`). Thresholds tune what counts as an action item.",
-  "orgs": [
-    "aldero-io"
+  "$comment": "What the daily report monitors. `repos` is the explicit list (owner/name). `orgs` (if set) auto-expands to every non-archived repo in each GitHub org. `gh` must be authenticated with access to each (private repos need `repo` scope; org listing needs `read:org`; Dependabot alerts need `security_events`). Thresholds tune what counts as an action item.",
+  "orgs": [],
+  "repos": [
+    "aldero-io/faxdash",
+    "aldero-io/chinasource",
+    "aldero-io/pulse-mac",
+    "quantara-io/quantara"
   ],
-  "repos": [],
   "thresholds": {
     "stalePrDays": 5,
     "staleIssueDays": 30
