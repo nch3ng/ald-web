@@ -137,12 +137,14 @@ Dependabot alerts — across every repo we monitor. Rationale:
 make report          # → prints the report and writes reports/daily-report-YYYY-MM-DD.md
 ```
 
-- **What's monitored:** edit the `repos` list (and thresholds) in
-  [`scripts/daily-report.config.json`](scripts/daily-report.config.json). That's the only
-  step to add or remove a project.
+- **What's monitored:** edit [`scripts/daily-report.config.json`](scripts/daily-report.config.json).
+  `orgs` is the main knob — each GitHub org listed auto-expands to all its non-archived
+  repos (defaults to `aldero-io`). `repos` adds individual repos on top. That's the only
+  step to add or remove projects.
 - **Requirements:** the [`gh`](https://cli.github.com) CLI authenticated (`gh auth login`)
-  with access to each repo. Private repos need the `repo` scope; Dependabot alerts need
-  `security_events`. The script is zero-dependency Node (no build step).
+  with access to each repo. Private repos need the `repo` scope, org listing needs
+  `read:org`, and Dependabot alerts need `security_events`. The script is zero-dependency
+  Node (no build step).
 - **Scheduling:** [`.github/workflows/daily-report.yml`](.github/workflows/daily-report.yml)
   runs it. It is **manual (`Run workflow`) by default**. To make it a true daily report,
   uncomment the `schedule:` block in that file **and** add a `MONITOR_TOKEN` repo secret
