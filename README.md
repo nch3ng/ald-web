@@ -57,11 +57,16 @@ Every `make` target has an `npm run` equivalent (see `package.json`).
 
 ```
 app/
-  layout.tsx               Root layout + metadata
-  page.tsx                 Hello-world home page
+  layout.tsx               Root layout + GTM-ready metadata, JSON-LD, analytics
+  page.tsx                 Hello-world home page (per-page metadata + CTA)
   page.test.tsx            Render smoke test for the home page
+  cta-button.tsx           CTA wired to the shared cta_click analytics event
+  opengraph-image.tsx      Auto-generated social-share card (from site config)
+  robots.ts / sitemap.ts   Generated robots.txt + sitemap.xml
   api/health/route.ts      Health/liveness endpoint
   api/health/route.test.ts Test for the health endpoint
+lib/gtm/                   Reusable GTM-ready module (SEO + analytics) — see its README
+docs/gtm-ready-checklist.md  The Aldero "definition of GTM-ready"
 docs/adr/                  Architecture Decision Records ("why" notes)
 scripts/daily-report.mjs          Daily cross-repo report generator (ALD-8)
 scripts/daily-report.config.json  Which repos to monitor + thresholds
@@ -164,6 +169,26 @@ make report          # → prints the report and writes reports/daily-report-YYY
 
   Set all four secrets in **Settings → Secrets and variables → Actions**. With a different
   mail provider, change `server_address`/`server_port` in the workflow.
+
+## GTM-ready (SEO + analytics)
+
+Every Aldero app should launch **GTM-ready** — discoverable, measurable, and
+ready to convert. The reusable [`lib/gtm/`](lib/gtm/README.md) module provides
+SEO metadata, schema.org structured data, and a shared analytics event model;
+the [GTM-ready checklist](docs/gtm-ready-checklist.md) is the standard it
+satisfies. This app uses it: unique title/meta, canonical, OpenGraph + Twitter,
+JSON-LD, `sitemap.xml`, `robots.txt`, an auto-generated OG image, and a typed
+`track()` event API (`page_view` / `cta_click` / `signup` / `activate` /
+`subscribe` / `cancel`).
+
+Analytics is opt-in: set `NEXT_PUBLIC_GA_MEASUREMENT_ID` to enable GA4; unset,
+it no-ops. To reuse in a new app, copy `lib/gtm/`, edit `lib/gtm/config.ts`, and
+follow the module README.
+
+> **Discoverability caveat:** on the current GitHub Pages *project* site
+> (`/ald-web`), `robots.txt` can't be served at the domain root, so full search
+> indexing needs a custom domain. All page-level signals and the sitemap are
+> valid today. See the checklist's "Discoverable" section.
 
 ## Notes for contributors (agents & humans)
 
