@@ -46,6 +46,15 @@ jobs:
         env:
           STATIC_EXPORT: "true"
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          # GA4 go-live (ALD-38): the analytics sink is inlined at build time
+          # (NEXT_PUBLIC_* are baked into the static export by Next). It stays a
+          # no-op until this repo variable holds a real measurement id — unset
+          # resolves to "" and `track()` no-ops, so deploys are safe before
+          # go-live. Flip analytics on with a single, secret-free change:
+          #   gh variable set NEXT_PUBLIC_GA_MEASUREMENT_ID -R nch3ng/ald-web -b 'G-XXXXXXXXXX'
+          # then re-run this workflow. A GA4 measurement id is a public client-side
+          # id (it ships in page JS), so a repo *variable* — not a secret — is correct.
+          NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
         run: npm run build
 
       - name: Disable Jekyll (serve Next's _next/ dir as-is)

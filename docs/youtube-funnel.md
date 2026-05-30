@@ -61,20 +61,56 @@ params — enough to confirm attribution end to end:
 3. Submit the form → `[gtm] signup { method: "email", source: "youtube", campaign: "inbox-ai-agent" }`.
    The page also echoes the captured attribution as QA feedback.
 
-## Going live in GA4 — follow-ups (not blockers for this code)
+## GA4 go-live runbook (ALD-38)
 
-This ships the instrumentation; turning it into reportable numbers needs GA4
-config, which requires GA4 admin access (see the GA4 access constraint — agents
-have no Analytics credentials; escalate to CEO):
+Turning the (already-live) instrumentation into reportable numbers. Only the GA4
+**property + custom dimensions + Realtime check** need a Google login (standing
+GA4 access constraint — agents have no Analytics credentials). Everything on the
+deploy side is wired and agent-doable. Division of labor below.
 
-- **Set `NEXT_PUBLIC_GA_MEASUREMENT_ID`** for the ald-web deploy to a real GA4
-  property. Until then `track()` no-ops in production.
-- **Register event-scoped custom dimensions** in GA4 for `source`, `medium`,
-  `campaign`, `content` so they're queryable in reports/explorations. (GA4 also
-  records its own session source/medium automatically, but these event params are
-  what tie a specific `signup` to a specific video.)
-- **No paid analytics** are required for any of the above; flag to CMO before any
-  spend.
+### Step 1 — Get a measurement id  *(GA login required → CEO/board)*
+Create a GA4 web data stream for ald-web (or reuse an existing Aldero property)
+and copy its **Measurement ID** (`G-XXXXXXXXXX`).
+- Data stream URL: `https://nch3ng.github.io/ald-web` (the current prod origin;
+  if/when ald-web moves to a custom domain, add that as an additional stream).
+- A measurement id is **not** a secret — it ships in client JS — so it can be
+  pasted into a ticket comment or set directly as a repo variable.
+
+### Step 2 — Turn it on in the deploy  *(agent-doable, no GA login)*
+The deploy build already consumes the id from a GitHub **repo variable**
+(`.github/workflows/deploy-pages.yml`). Set it once and re-deploy:
+```bash
+gh variable set NEXT_PUBLIC_GA_MEASUREMENT_ID -R nch3ng/ald-web -b 'G-XXXXXXXXXX'
+gh workflow run deploy-pages.yml -R nch3ng/ald-web   # or just push to main
+```
+Until the variable is set it resolves to `""` and `track()` no-ops, so the
+current production deploy is unaffected. No code change, no secret.
+
+### Step 3 — Register event-scoped custom dimensions  *(GA login required → CEO/board)*
+In **Admin → Custom definitions → Custom dimensions**, create four
+**event-scoped** dimensions so attribution is queryable in reports/explorations.
+The *Event parameter* must match the names our events actually send (see
+`lib/gtm/attribution.ts` / `analytics.ts`) **exactly**:
+
+| Dimension name | Scope | Event parameter |
+| -------------- | ----- | --------------- |
+| Source         | Event | `source`        |
+| Medium         | Event | `medium`        |
+| Campaign       | Event | `campaign`      |
+| Content        | Event | `content`       |
+
+(`term` is also sent and can optionally be registered the same way. GA4 records
+its own session source/medium automatically, but these **event** params are what
+tie a specific `signup` to a specific video.)
+
+### Step 4 — Validate end-to-end  *(GA login required → CEO/board, or hand to QA)*
+Open
+`https://nch3ng.github.io/ald-web/signup?utm_source=youtube&utm_campaign=inbox-ai-agent`,
+submit the form, and confirm in **GA4 → Reports → Realtime** that a `signup`
+event arrives carrying `source=youtube` and `campaign=inbox-ai-agent`. (Use
+DebugView for parameter-level inspection.)
+
+**No paid analytics** are required for any of the above; flag to CMO before any spend.
 
 ## Scope note
 
