@@ -15,10 +15,14 @@
 import { useEffect } from "react";
 import Script from "next/script";
 import { GA_MEASUREMENT_ID, trackPageView } from "./analytics";
+import { captureAttribution } from "./attribution";
 
 export function Analytics() {
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID) return;
+    // Capture first-touch UTM attribution from the landing URL BEFORE the first
+    // page_view, so the landing event — and every event after it this visit —
+    // carries the channel/campaign that drove the visit. Idempotent.
+    captureAttribution();
     trackPageView({
       page_path: window.location.pathname,
       page_title: document.title,

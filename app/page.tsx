@@ -8,6 +8,7 @@ import { CtaButton } from "./cta-button";
 // health link explicitly. Empty on a Node host; "/ald-web" in the Pages export.
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const healthHref = `${basePath}/api/health`;
+const signupHref = `${basePath}/signup`;
 
 // Page-level metadata: unique title + description, canonical for "/". Spreads
 // the GTM-ready baseline from buildMetadata().
@@ -36,8 +37,8 @@ export default function Home() {
         <code className={styles.code}>app/page.tsx</code> to start building.
       </p>
       <p>
-        <CtaButton ctaId="hero_get_started" href={healthHref}>
-          Check it&apos;s alive →
+        <CtaButton ctaId="hero_get_started" href={signupHref}>
+          Get early access →
         </CtaButton>
       </p>
       <p className={styles.health}>
